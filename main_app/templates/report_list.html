@@ -1,0 +1,10 @@
+<h2>Daftar Laporan</h2>
+<a href="/add/">Tambah Laporan</a>
+
+<ul>
+    {% for report in reports %}
+        <li>
+            {{ report.title }} - {{ report.category }} - {{ report.location }}
+        </li>
+    {% endfor %}
+</ul>

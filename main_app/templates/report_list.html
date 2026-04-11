@@ -1,10 +1,34 @@
-<h2>Daftar Laporan</h2>
-<a href="/add/">Tambah Laporan</a>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Laporan Kota Bukit Kemuning</title>
+</head>
+<body>
 
-<ul>
-    {% for report in reports %}
-        <li>
-            {{ report.title }} - {{ report.category }} - {{ report.location }}
-        </li>
-    {% endfor %}
-</ul>
+    <h1>Laporan Kota Bukit Kemuning</h1>
+
+    <h2>Daftar Laporan</h2>
+
+    <a href="{% url 'add_report' %}">Tambah Laporan</a>
+
+    <hr>
+
+    {% if reports %}
+        <ul>
+            {% for report in reports %}
+                <li>
+                    <b>{{ report.title }}</b> <br>
+                    Kategori: {{ report.category }} <br>
+                    Deskripsi: {{ report.description }} <br>
+                    Lokasi: {{ report.location }} <br>
+                    Waktu: {{ report.created_at|date:"d M Y H:i" }}
+                </li>
+                <br>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Belum ada laporan.</p>
+    {% endif %}
+
+</body>
+</html>

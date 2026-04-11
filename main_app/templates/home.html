@@ -1,8 +1,137 @@
-<h1>Home Page</h1>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Laporan Kota Bukit Kemuning</title>
 
-<p>Nama: Adira Nurwahid</p>
-<p>NPM: 24782002</p>
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
 
-<a href="/">Home</a> |
-<a href="/about/">About</a> |
-<a href="/contacts/">Contacts</a>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+        }
+
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h2 {
+            margin: 0;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .btn-add { background: #27ae60; color: white; }
+        .btn-edit { background: #2980b9; color: white; }
+        .btn-delete { background: #e74c3c; color: white; }
+        .btn-verify { background: #f39c12; color: white; }
+
+        .container {
+            padding: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            margin: 0;
+        }
+
+        .status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: inline-block;
+        }
+
+        .reported { background: #f1c40f; color: white; }
+        .verified { background: #2ecc71; color: white; }
+
+        .actions {
+            margin-top: 10px;
+        }
+
+        .actions form,
+        .actions a {
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h2>📢 Laporan Kota Bukit Kemuning</h2>
+    <a href="{% url 'add_report' %}">
+        <button class="btn btn-add">+ Tambah Laporan</button>
+    </a>
+</header>
+
+<div class="container">
+
+{% for report in reports %}
+    <div class="card">
+        <h3>{{ report.title }}</h3>
+
+        <p>{{ report.description }}</p>
+
+        <p>📍 {{ report.location }}</p>
+        <small>{{ report.created_at }}</small>
+
+        <br><br>
+
+        <!-- STATUS -->
+        {% if report.status == 'VERIFIED' %}
+            <span class="status verified">✔ Verified</span>
+        {% else %}
+            <span class="status reported">⏳ Reported</span>
+        {% endif %}
+
+        <!-- ACTION -->
+        <div class="actions">
+
+            {% if report.status != 'VERIFIED' %}
+            <form method="post" action="{% url 'update_status' report.id %}">
+                {% csrf_token %}
+                <button class="btn btn-verify">Verifikasi</button>
+            </form>
+            {% endif %}
+
+            <a href="{% url 'edit_report' report.id %}">
+                <button class="btn btn-edit">Edit</button>
+            </a>
+
+            <form method="post" action="{% url 'delete_report' report.id %}">
+                {% csrf_token %}
+                <button class="btn btn-delete">Hapus</button>
+            </form>
+
+        </div>
+    </div>
+
+{% empty %}
+    <p>Tidak ada laporan.</p>
+{% endfor %}
+
+</div>
+
+</body>
+</html>

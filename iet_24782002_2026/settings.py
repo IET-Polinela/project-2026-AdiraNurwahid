@@ -26,10 +26,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'main',
-'main_app',
-'about',
-'contacts',
+    'main_app',
 ]
 
 MIDDLEWARE = [
@@ -66,7 +65,7 @@ WSGI_APPLICATION = 'iet_24782002_2026.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'smartcity_db',
+        'NAME': 'smartcity_db',  # 
         'USER': 'postgres',
         'PASSWORD': 'admin',
         'HOST': 'localhost',

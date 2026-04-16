@@ -1,9 +1,15 @@
-<h2>Edit Laporan</h2>
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="card p-4 shadow text-center">
+<h3>Yakin mau hapus?</h3>
 
 <form method="post">
     {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Update</button>
+    <button class="btn btn-danger">Ya, Hapus</button>
+    <a href="/" class="btn btn-secondary">Batal</a>
 </form>
 
-<a href="{% url 'report_list' %}">Kembali</a>
+</div>
+
+{% endblock %}

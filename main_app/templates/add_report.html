@@ -1,95 +1,21 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Tambah Laporan</title>
+{% extends 'base.html' %}
+{% block content %}
 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+<div class="card p-4 shadow">
+<h3>Tambah Laporan</h3>
 
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: #f4f6f9;
-            margin: 0;
-        }
+<form method="post"
+onsubmit="this.querySelector('button').innerText='Loading...'; this.querySelector('button').disabled=true;">
+    {% csrf_token %}
 
-        header {
-            background: #2c3e50;
-            color: white;
-            padding: 15px 30px;
-        }
+    <input type="text" name="title" class="form-control mb-2" placeholder="Judul">
+    <input type="text" name="category" class="form-control mb-2" placeholder="Kategori">
+    <textarea name="description" class="form-control mb-2" placeholder="Deskripsi"></textarea>
+    <input type="text" name="location" class="form-control mb-3" placeholder="Lokasi">
 
-        .container {
-            max-width: 500px;
-            margin: 40px auto;
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        form p {
-            margin-bottom: 15px;
-        }
-
-        input, textarea {
-            width: 100%;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-
-        textarea {
-            resize: none;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            color: white;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        .btn-submit {
-            background: #27ae60;
-        }
-
-        .btn-back {
-            background: #7f8c8d;
-            margin-top: 10px;
-        }
-    </style>
-</head>
-
-<body>
-
-<header>
-    <h2>➕ Tambah Laporan</h2>
-</header>
-
-<div class="container">
-
-    <h2>Form Laporan</h2>
-
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-
-        <button type="submit" class="btn btn-submit">Simpan Laporan</button>
-    </form>
-
-    <a href="{% url 'report_list' %}">
-        <button class="btn btn-back">Kembali</button>
-    </a>
-
+    <button class="btn btn-success">Submit</button>
+    <a href="/" class="btn btn-secondary">Kembali</a>
+</form>
 </div>
 
-</body>
-</html>
+{% endblock %}

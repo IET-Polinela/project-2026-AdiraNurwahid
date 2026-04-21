@@ -1,15 +1,38 @@
 {% extends 'base.html' %}
+
 {% block content %}
 
-<div class="card p-4 shadow text-center">
-<h3>Yakin mau hapus?</h3>
+<div class="container mt-4">
+    <h2>Edit Laporan</h2>
 
-<form method="post">
-    {% csrf_token %}
-    <button class="btn btn-danger">Ya, Hapus</button>
-    <a href="/" class="btn btn-secondary">Batal</a>
-</form>
+    <form method="post"
+    onsubmit="this.querySelector('button').innerText='Loading...'; this.querySelector('button').disabled=true;">
+        {% csrf_token %}
 
+        <div class="mb-3">
+            <label>Judul</label>
+            <input type="text" name="title" value="{{ object.title }}" class="form-control">
+        </div>
+
+        <div class="mb-3">
+            <label>Kategori</label>
+            <input type="text" name="category" value="{{ object.category }}" class="form-control">
+        </div>
+
+        <div class="mb-3">
+            <label>Deskripsi</label>
+            <textarea name="description" class="form-control">{{ object.description }}</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label>Lokasi</label>
+            <input type="text" name="location" value="{{ object.location }}" class="form-control">
+        </div>
+
+        <button class="btn btn-warning">Update</button>
+        <a href="/" class="btn btn-secondary">Kembali</a>
+
+    </form>
 </div>
 
 {% endblock %}

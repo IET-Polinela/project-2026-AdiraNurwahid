@@ -3,7 +3,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-
-    # arahkan ke app utama
     path('', include('main_app.urls')),
+    path('auth/', include('usermanagement_24782002.urls')),
 ]

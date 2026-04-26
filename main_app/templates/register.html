@@ -1,0 +1,16 @@
+<form method="post">
+    {% csrf_token %}
+
+    <input type="text" name="username" placeholder="Username" class="form-control mb-2" required>
+
+    <input type="email" name="email" placeholder="Email" class="form-control mb-2" required>
+
+    <input type="password" name="password" placeholder="Password" class="form-control mb-2" required>
+
+    <select name="role" class="form-control mb-3">
+        <option value="member">Member</option>
+        <option value="admin">Admin</option>
+    </select>
+
+    <button class="btn btn-success w-100">Daftar</button>
+</form>

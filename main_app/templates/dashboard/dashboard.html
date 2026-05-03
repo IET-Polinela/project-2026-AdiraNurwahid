@@ -1,0 +1,150 @@
+﻿{% extends 'base.html' %}
+{% block content %}
+<div class="hero-card">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1 class="display-6 fw-bold">Dashboard Laporan</h1>
+            <p class="text-secondary">Pantau status laporan, kategori, dan laporan terbaru secara cepat.</p>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <a href="/" class="btn btn-primary btn-lg">Lihat Semua Laporan</a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card p-4">
+            <h5 class="mb-3">Distribusi Status Laporan</h5>
+            <canvas id="statusChart" height="260"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card p-4">
+            <h5 class="mb-3">Distribusi Kategori Laporan</h5>
+            <canvas id="categoryChart" height="260"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-12">
+        <div class="card p-4">
+            <h5 class="mb-3">5 Laporan Terbaru - REPORTED</h5>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Judul</th>
+                            <th>Kategori</th>
+                            <th>Lokasi</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in latest_reported %}
+                        <tr>
+                            <td>{{ r.title }}</td>
+                            <td>{{ r.category }}</td>
+                            <td>{{ r.location }}</td>
+                            <td><span class="badge-status badge-REPORTED">{{ r.status }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4">Data tidak tersedia</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-12">
+        <div class="card p-4">
+            <h5 class="mb-3">5 Laporan Terbaru - RESOLVED</h5>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Judul</th>
+                            <th>Kategori</th>
+                            <th>Lokasi</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in latest_resolved %}
+                        <tr>
+                            <td>{{ r.title }}</td>
+                            <td>{{ r.category }}</td>
+                            <td>{{ r.location }}</td>
+                            <td><span class="badge-status badge-RESOLVED">{{ r.status }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4">Data tidak tersedia</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+fetch('api/status/')
+.then(res => res.json())
+.then(data => {
+    if (data.labels && data.data) {
+        new Chart(document.getElementById('statusChart'), {
+            type: 'pie',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    data: data.data,
+                    backgroundColor: ['#1a73e8', '#ff3864', '#f5c542', '#4bc0c0', '#9966ff']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+});
+
+fetch('api/category/')
+.then(res => res.json())
+.then(data => {
+    if (data.labels && data.data) {
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Jumlah Laporan',
+                    data: data.data,
+                    backgroundColor: '#1a73e8'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

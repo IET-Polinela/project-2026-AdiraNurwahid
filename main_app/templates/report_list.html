@@ -1,34 +1,46 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Laporan Kota Bukit Kemuning</title>
-</head>
-<body>
+﻿{% extends 'base.html' %}
+{% block content %}
+<div class="hero-card">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1 class="display-6 fw-bold">Daftar Laporan</h1>
+            <p class="text-secondary">Lihat laporan city report dengan tampilan konsisten dan mudah dinavigasi.</p>
+        </div>
+    </div>
+</div>
 
-    <h1>Laporan Kota Bukit Kemuning</h1>
-
-    <h2>Daftar Laporan</h2>
-
-    <a href="{% url 'add_report' %}">Tambah Laporan</a>
-
-    <hr>
-
+<div class="card p-4 mb-4">
     {% if reports %}
-        <ul>
-            {% for report in reports %}
-                <li>
-                    <b>{{ report.title }}</b> <br>
-                    Kategori: {{ report.category }} <br>
-                    Deskripsi: {{ report.description }} <br>
-                    Lokasi: {{ report.location }} <br>
-                    Waktu: {{ report.created_at|date:"d M Y H:i" }}
-                </li>
-                <br>
-            {% endfor %}
-        </ul>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Judul</th>
+                        <th>Kategori</th>
+                        <th>Lokasi</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr>
+                        <td>{{ report.title }}</td>
+                        <td>{{ report.category }}</td>
+                        <td>{{ report.location }}</td>
+                        <td><span class="badge-status badge-{{ report.status }}">{{ report.status }}</span></td>
+                        <td>
+                            <a href="{% url 'detail_report' report.pk %}" class="btn btn-sm btn-info">Lihat</a>
+                            <a href="{% url 'edit_report' report.pk %}" class="btn btn-sm btn-warning">Edit</a>
+                            <a href="{% url 'delete_report' report.pk %}" class="btn btn-sm btn-danger">Hapus</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     {% else %}
-        <p>Belum ada laporan.</p>
+        <p class="text-secondary">Belum ada laporan.</p>
     {% endif %}
-
-</body>
-</html>
+</div>
+{% endblock %}

@@ -2,9 +2,18 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, authenticate, get_user_model
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.views.generic import TemplateView
+
+from django.http import JsonResponse
+from django.db.models import Count
+
+from main_app.models import Report
 
 User = get_user_model()
 
+
+# ================= AUTH =================
 
 def login_view(request):
     if request.method == 'POST':
@@ -65,19 +74,55 @@ def register_view(request):
     return render(request, 'register.html')
 
 
-@login_required
-def dashboard_view(request):
-    return render(request, 'dashboard.html')
+# ================= DASHBOARD (CBV) =================
 
-from django.http import HttpResponse
+@method_decorator(login_required, name='dispatch')
+class DashboardView(TemplateView):
+    template_name = 'dashboard/dashboard.html'
 
-# middleware sederhana untuk admin
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context['latest_reported'] = Report.objects.filter(
+            status='REPORTED'
+        ).order_by('-created_at')[:5]
+
+        context['latest_resolved'] = Report.objects.filter(
+            status='RESOLVED'
+        ).order_by('-created_at')[:5]
+
+        return context
+
+
+# ================= API (WAJIB TUGAS) =================
+
+def status_chart(request):
+    data = Report.objects.values('status').annotate(total=Count('id'))
+
+    return JsonResponse({
+        'labels': [x['status'] for x in data],
+        'data': [x['total'] for x in data]
+    })
+
+
+def category_chart(request):
+    data = Report.objects.values('category').annotate(total=Count('id'))
+
+    return JsonResponse({
+        'labels': [x['category'] for x in data],
+        'data': [x['total'] for x in data]
+    })
+
+
+# ================= ADMIN =================
+
 def admin_only(view_func):
     def wrapper(request, *args, **kwargs):
         if not (request.user.is_superuser or request.user.is_staff or request.user.role == 'admin'):
             return render(request, '403.html', status=403)
         return view_func(request, *args, **kwargs)
     return wrapper
+
 
 @login_required
 @admin_only

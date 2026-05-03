@@ -2,9 +2,22 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.urls import reverse_lazy
 from .models import Report
 from django.views import View
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse, JsonResponse
+from django.db.models import Q
+
+
+@login_required
+def about_view(request):
+    return render(request, 'about.html')
+
+
+@login_required
+def contacts_view(request):
+    return render(request, 'contacts.html')
 
 # LIST
 class ReportListView(LoginRequiredMixin, ListView):
@@ -27,7 +40,7 @@ class ReportCreateView(LoginRequiredMixin, CreateView):
 # UPDATE
 class ReportUpdateView(LoginRequiredMixin, UpdateView):
     model = Report
-    fields = ['title', 'category', 'description', 'location']
+    fields = ['title', 'category', 'description', 'location', 'status']
     template_name = 'edit_report.html'
     success_url = reverse_lazy('report_list')
 
@@ -45,3 +58,38 @@ class ReportUpdateStatusView(LoginRequiredMixin, View):
         report.save()
         messages.success(request, "Status berhasil diubah!")
         return redirect('report_list')
+
+def admin_only(view_func):
+    def wrapper(request, *args, **kwargs):
+        if request.user.role != 'admin':
+            return HttpResponse("Akses Ditolak", status=403)
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+# API untuk search reports
+@login_required
+def search_reports(request):
+    q = request.GET.get('q', '')
+    reports = Report.objects.filter(
+        Q(title__icontains=q) |
+        Q(category__icontains=q) |
+        Q(location__icontains=q)
+    )[:20]
+    data = list(reports.values('id', 'title', 'category', 'location', 'status'))
+    return JsonResponse(data, safe=False)
+
+# API untuk detail report
+@login_required
+def report_detail(request, id):
+    try:
+        report = Report.objects.get(id=id)
+        data = {
+            "title": report.title,
+            "category": report.category,
+            "description": report.description,
+            "location": report.location,
+            "status": report.status,
+        }
+        return JsonResponse(data)
+    except Report.DoesNotExist:
+        return JsonResponse({'error': 'Report not found'}, status=404)

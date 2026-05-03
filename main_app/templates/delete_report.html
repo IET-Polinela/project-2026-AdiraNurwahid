@@ -1,11 +1,28 @@
-<h2>Yakin mau hapus laporan?</h2>
-
-<p><b>{{ object.title }}</b></p>
-
-<form method="post">
-    {% csrf_token %}
-    <button type="submit">Ya, Hapus</button>
-</form>
-
-<br>
-<a href="{% url 'report_list' %}">Batal</a>
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-center align-items-center" style="min-height: calc(100vh - 200px);">
+    <div class="card border-0 shadow-lg" style="max-width: 500px; width: 100%; border-radius: 24px; overflow: hidden;">
+        <div class="p-4 text-center" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">
+            <div class="mb-3">
+                <i class="bi bi-exclamation-triangle fs-1"></i>
+            </div>
+            <h2 class="fw-bold mb-2">Hapus Laporan?</h2>
+            <p class="mb-0 opacity-75">Tindakan ini tidak dapat dibatalkan. Data akan hilang permanen.</p>
+        </div>
+        <div class="p-5 bg-white">
+            <div class="mb-4 p-3 rounded-4" style="background: #fef2f2; border-left: 4px solid #ef4444;">
+                <p class="mb-0 text-dark fw-semibold"><i class="bi bi-file-text me-2 text-danger"></i>{{ object.title }}</p>
+            </div>
+            <form method="post" class="mb-3">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-lg w-100 rounded-pill">
+                    <i class="bi bi-trash me-2"></i>Ya, Hapus Laporan
+                </button>
+            </form>
+            <a href="{% url 'report_list' %}" class="btn btn-secondary btn-lg w-100 rounded-pill">
+                <i class="bi bi-arrow-left me-2"></i>Batal, Kembali
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

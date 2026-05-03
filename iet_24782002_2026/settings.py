@@ -119,3 +119,5 @@ AUTH_USER_MODEL = 'usermanagement_24782002.CustomUser'
 LOGIN_URL = '/auth/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/auth/login/'
+
+'dashboard_24782002',

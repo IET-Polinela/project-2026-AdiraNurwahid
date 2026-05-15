@@ -8,6 +8,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.db.models import Q
+from rest_framework import generics
+from .serializers import ReportSerializer
+
 
 
 @login_required
@@ -93,3 +96,16 @@ def report_detail(request, id):
         return JsonResponse(data)
     except Report.DoesNotExist:
         return JsonResponse({'error': 'Report not found'}, status=404)
+    
+    # =========================
+# DJANGO REST FRAMEWORK API
+# =========================
+
+class ReportListAPI(generics.ListCreateAPIView):
+    queryset = Report.objects.all()
+    serializer_class = ReportSerializer
+
+
+class ReportDetailAPI(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Report.objects.all()
+    serializer_class = ReportSerializer

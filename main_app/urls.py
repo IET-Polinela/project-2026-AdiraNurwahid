@@ -11,6 +11,6 @@ urlpatterns = [
     path('about/', about_view, name='about'),
     path('contacts/', contacts_view, name='contacts'),
     # API endpoints
-    path('api/search/', search_reports, name='search_reports'),
-    path('api/report/<int:id>/', report_detail, name='report_detail'),
+    path('api/reports/', ReportListAPI.as_view(), name='report_list_api'),
+    path('api/reports/<int:pk>/', ReportDetailAPI.as_view(), name='report_detail_api'),
 ]

@@ -8,11 +8,13 @@ from .views import (
     status_chart,
     category_chart
 )
+from .api_views import RegisterView
 
 urlpatterns = [
     path('login/', login_view, name='login'),
     path('register/', register_view, name='register'),
     path('logout/', logout_view, name='logout'),
+    path('api/register/', RegisterView.as_view(), name='api_register'),
 
     # ✅ Dashboard pakai CBV
     path('dashboard/', DashboardView.as_view(), name='dashboard'),

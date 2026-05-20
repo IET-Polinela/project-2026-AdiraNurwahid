@@ -1,10 +1,27 @@
-from rest_framework import viewsets
-from rest_framework.permissions import AllowAny
+from rest_framework import viewsets, permissions
 from .models import Report
 from .serializers import ReportSerializer
+from .permissions import IsOwnerAndDraftOrReadOnly
 
 
 class ReportViewSet(viewsets.ModelViewSet):
-    queryset = Report.objects.all().order_by('-created_at')
+
     serializer_class = ReportSerializer
-    permission_classes = [AllowAny]
+
+    permission_classes = [
+        permissions.IsAuthenticated,
+        IsOwnerAndDraftOrReadOnly
+    ]
+
+    def get_queryset(self):
+
+        # hanya report milik user login
+        return Report.objects.filter(
+            reporter=self.request.user
+        )
+
+    def perform_create(self, serializer):
+
+        serializer.save(
+            reporter=self.request.user
+        )

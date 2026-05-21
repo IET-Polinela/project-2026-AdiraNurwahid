@@ -8,7 +8,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.db.models import Q
-from rest_framework import generics
+from rest_framework import generics, permissions
 from .serializers import ReportSerializer
 
 
@@ -96,16 +96,66 @@ def report_detail(request, id):
         return JsonResponse(data)
     except Report.DoesNotExist:
         return JsonResponse({'error': 'Report not found'}, status=404)
-    
+
     # =========================
 # DJANGO REST FRAMEWORK API
 # =========================
 
 class ReportListAPI(generics.ListCreateAPIView):
-    queryset = Report.objects.all()
+
     serializer_class = ReportSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+
+        # tampilkan:
+        # - semua NON-DRAFT
+        # - DRAFT milik sendiri
+
+        return Report.objects.filter(
+            Q(status__in=['REPORTED', 'VERIFIED']) |
+            Q(status='DRAFT', reporter=self.request.user)
+        )
+
+    def perform_create(self, serializer):
+
+        serializer.save(reporter=self.request.user)
 
 
 class ReportDetailAPI(generics.RetrieveUpdateDestroyAPIView):
+
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_destroy(self, instance):
+
+        # hanya owner + status DRAFT
+        if (
+            instance.reporter != self.request.user or
+            instance.status != 'DRAFT'
+        ):
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied(
+                "Hanya pemilik laporan dengan status DRAFT yang dapat menghapus laporan."
+            )
+
+        instance.delete()
+
+    def perform_update(self, serializer):
+
+        instance = self.get_object()
+
+        # hanya owner + DRAFT
+        if (
+            instance.reporter != self.request.user or
+            instance.status != 'DRAFT'
+        ):
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied(
+                "Hanya pemilik laporan dengan status DRAFT yang dapat mengubah laporan."
+            )
+
+        serializer.save()

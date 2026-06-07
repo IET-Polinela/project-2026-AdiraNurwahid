@@ -10,7 +10,5 @@ urlpatterns = [
     path('update-status/<int:pk>/', ReportUpdateStatusView.as_view(), name='update_status'),
     path('about/', about_view, name='about'),
     path('contacts/', contacts_view, name='contacts'),
-    # API endpoints
-    path('api/reports/', ReportListAPI.as_view(), name='report_list_api'),
-    path('api/reports/<int:pk>/', ReportDetailAPI.as_view(), name='report_detail_api'),
+    # API endpoints are registered in main_app.api_urls and included from project urls.py
 ]

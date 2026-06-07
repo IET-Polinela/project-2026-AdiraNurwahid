@@ -1,30 +1,38 @@
 from rest_framework import viewsets, permissions
 from rest_framework.exceptions import PermissionDenied
-from django.db.models import Q
 from .models import Report
 from .serializers import ReportSerializer
 from .permissions import IsOwnerAndDraftOrReadOnly
+from rest_framework.pagination import PageNumberPagination
+
+class ReportPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 class ReportViewSet(viewsets.ModelViewSet):
     serializer_class = ReportSerializer
+    pagination_class = ReportPagination
 
     def get_queryset(self):
-        """
-        Mengembalikan queryset yang disesuaikan:
-        - Admin: lihat semua laporan.
-        - Citizen (member): lihat laporan non-DRAFT milik siapa saja
-          PLUS laporan DRAFT milik diri sendiri.
+        """Filter dan pagination untuk Lab 12.
+
+        Mendukung query param:
+        - ?tab=my_reports -> hanya laporan milik user login.
+        - ?tab=feed -> semua laporan kecuali DRAFT.
         """
         user = self.request.user
+        tab = self.request.query_params.get('tab', 'my_reports').lower()
 
-        if user.role == 'admin':
-            return Report.objects.all().order_by('-created_at')
+        queryset = Report.objects.all()
 
-        # Citizen: laporan milik user ini + laporan non-DRAFT (publik)
-        return Report.objects.filter(
-            Q(reporter=user) | Q(status__in=['REPORTED', 'VERIFIED', 'IN_PROGRESS', 'RESOLVED'])
-        ).order_by('-created_at')
+        if tab == 'feed':
+            queryset = queryset.exclude(status='DRAFT')
+        else:
+            queryset = queryset.filter(reporter=user)
+
+        return queryset.order_by('-created_at')
 
     def get_permissions(self):
         """

@@ -1,7 +1,35 @@
+﻿// ==========================
+// GLOBAL STATE
+// ==========================
+
+let currentPage = 1;
+let currentTab = "my_reports";
+let editingReportId = null;
+
+let allReports = [];
+let totalPages = 1;
+let reportModalInstance = null;
+
 const BASE_URL = "http://127.0.0.1:8000";
 const TOKEN_URL = "/api/token/";
 const REFRESH_URL = "/api/token/refresh/";
 const REPORTS_URL = "/api/reports/";
+
+const STATUS_BADGES = {
+    DRAFT: "secondary",
+    REPORTED: "warning",
+    VERIFIED: "info",
+    IN_PROGRESS: "primary",
+    RESOLVED: "success"
+};
+
+const STATUS_PROGRESS = {
+    DRAFT: 20,
+    REPORTED: 40,
+    VERIFIED: 60,
+    IN_PROGRESS: 80,
+    RESOLVED: 100
+};
 
 function log(...args) {
     console.log("[SmartCitySPA]", ...args);
@@ -41,7 +69,6 @@ function parseJwt(token) {
 
 function isTokenExpired(token) {
     const payload = parseJwt(token);
-
     if (!payload || !payload.exp) {
         return true;
     }
@@ -122,7 +149,6 @@ async function apiRequest(endpoint, { method = "GET", body = null, headers = {} 
             if (newToken) {
                 requestHeaders["Authorization"] = `Bearer ${newToken}`;
             }
-
             const retryResponse = await fetch(BASE_URL + endpoint, options);
             log("retry response", endpoint, retryResponse.status);
             return retryResponse;
@@ -144,7 +170,6 @@ function isLoggedIn() {
 
 function updateNav() {
     const navMenu = document.getElementById("nav-menu");
-
     if (!navMenu) {
         return;
     }
@@ -177,11 +202,13 @@ function showMessage(message, type = "info") {
     }
 
     messageBox.innerHTML = `
-        <div class="alert alert-${type}" role="alert">
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
             ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     `;
 }
+
 function logout(showAlert = true) {
     clearTokens();
     updateNav();
@@ -212,11 +239,11 @@ function renderLogin() {
     updateNav();
 
     document.getElementById("app-content").innerHTML = `
-        <section class="auth-page">
-            <div class="auth-card shadow-sm">
+        <section class="auth-page d-flex justify-content-center align-items-center min-vh-75">
+            <div class="auth-card shadow-sm rounded-4 p-4 bg-white" style="max-width: 420px; width: 100%;">
                 <div class="auth-header text-center mb-4">
                     <h2>Login Warga</h2>
-                    <p>Masuk untuk melihat laporan dan membuat laporan baru.</p>
+                    <p class="text-muted">Masuk untuk melihat laporan dan membuat laporan baru.</p>
                 </div>
 
                 <div id="messageBox"></div>
@@ -279,7 +306,7 @@ function renderLogin() {
 
 async function fetchReports() {
     log("Meminta daftar laporan...");
-    const response = await apiRequest(REPORTS_URL, { method: "GET" });
+    const response = await apiRequest(`${REPORTS_URL}?tab=${currentTab}&page=${currentPage}`);
 
     if (response.status === 401) {
         showMessage("Token tidak valid atau kadaluarsa. Silakan login ulang.", "warning");
@@ -293,97 +320,319 @@ async function fetchReports() {
         return null;
     }
 
-    const reports = await response.json();
-    log("Daftar laporan diterima", reports);
-    return reports;
+    const data = await response.json();
+    totalPages = Math.max(1, Math.ceil((data.count || 0) / 10));
+    allReports = Array.isArray(data.results) ? data.results : [];
+    return data;
 }
 
-function renderReports(reports) {
+function getReportSummary() {
+    return allReports.reduce(
+        (summary, report) => {
+            if (report.status === "DRAFT") summary.draft += 1;
+            if (report.status === "REPORTED") summary.reported += 1;
+            if (report.status === "VERIFIED") summary.verified += 1;
+            return summary;
+        },
+        { draft: 0, reported: 0, verified: 0 }
+    );
+}
+
+function renderSidebar() {
+    const summary = getReportSummary();
+    const sidebarStats = document.getElementById("sidebarStats");
+    if (!sidebarStats) {
+        return;
+    }
+
+    sidebarStats.innerHTML = `
+        <div class="row g-3">
+            <div class="col-12">
+                <div class="card shadow-sm rounded-4 p-3 h-100">
+                    <div class="card-body">
+                        <h6 class="text-uppercase text-muted mb-2">Total Draft</h6>
+                        <p class="display-6 fw-bold mb-1">${summary.draft}</p>
+                        <p class="small text-muted mb-0">Draft di halaman ini</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card shadow-sm rounded-4 p-3 h-100">
+                    <div class="card-body">
+                        <h6 class="text-uppercase text-muted mb-2">Total Reported</h6>
+                        <p class="display-6 fw-bold mb-1">${summary.reported}</p>
+                        <p class="small text-muted mb-0">Laporan yang dikirim</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card shadow-sm rounded-4 p-3 h-100">
+                    <div class="card-body">
+                        <h6 class="text-uppercase text-muted mb-2">Total Verified</h6>
+                        <p class="display-6 fw-bold mb-1">${summary.verified}</p>
+                        <p class="small text-muted mb-0">Laporan yang diverifikasi</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderTabs() {
+    const tabControls = document.getElementById("tabControls");
+    if (!tabControls) {
+        return;
+    }
+
+    const myReportsActive = currentTab === "my_reports" ? "active" : "";
+    const feedActive = currentTab === "feed" ? "active" : "";
+
+    tabControls.innerHTML = `
+        <div class="btn-group" role="group" aria-label="Tab navigation">
+            <button id="tabMyReports" type="button" class="btn btn-outline-primary ${myReportsActive}">Laporan Saya</button>
+            <button id="tabFeed" type="button" class="btn btn-outline-primary ${feedActive}">Feed Kota</button>
+        </div>
+    `;
+
+    document.getElementById("tabMyReports").addEventListener("click", () => changeTab("my_reports"));
+    document.getElementById("tabFeed").addEventListener("click", () => changeTab("feed"));
+}
+
+function renderReports() {
     const reportCards = document.getElementById("reportCards");
     if (!reportCards) {
         return;
     }
 
-    if (!reports || reports.length === 0) {
+    if (!allReports || allReports.length === 0) {
         reportCards.innerHTML = `
-            <div class="empty-state shadow-sm p-4 rounded-3 text-center">
+            <div class="empty-state shadow-sm p-4 rounded-4 text-center bg-white">
                 <i class="bi bi-journal-x fs-1 text-muted"></i>
                 <h5 class="mt-3">Belum ada laporan</h5>
-                <p class="text-muted">Buat laporan baru untuk melihatnya di sini.</p>
+                <p class="text-muted">Gunakan tombol Buat Laporan untuk menambahkan laporan baru.</p>
             </div>
         `;
+        document.getElementById("paginationNav").innerHTML = "";
         return;
     }
 
-    reportCards.innerHTML = reports.map((report) => {
-        const statusBadge = {
-            DRAFT: "secondary",
-            REPORTED: "warning",
-            VERIFIED: "info",
-            IN_PROGRESS: "primary",
-            RESOLVED: "success"
-        }[report.status] || "dark";
+    reportCards.innerHTML = allReports.map((report) => {
+        const badgeClass = STATUS_BADGES[report.status] || "dark";
+        const progressValue = STATUS_PROGRESS[report.status] || 0;
+        const canEditOrDelete = report.is_owner === true && report.status === "DRAFT";
 
         return `
-            <article class="report-card shadow-sm rounded-4 p-4">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div>
-                        <h5 class="fw-bold mb-1">${report.title || 'Tanpa Judul'}</h5>
-                        <p class="text-muted mb-1">${report.category || 'Umum'} • ${report.location || 'Lokasi tidak tersedia'}</p>
+            <div class="card shadow-sm rounded-4 mb-4">
+                <div class="card-body">
+                    <div class="d-flex flex-column flex-md-row justify-content-between gap-3">
+                        <div>
+                            <h5 class="fw-bold mb-1">${report.title || "Tanpa Judul"}</h5>
+                            <p class="text-muted mb-1">${report.category || "Umum"} • ${report.location || "Lokasi tidak tersedia"}</p>
+                        </div>
+                        <span class="badge bg-${badgeClass} text-uppercase align-self-start">${report.status || "UNKNOWN"}</span>
                     </div>
-                    <span class="badge bg-${statusBadge} text-uppercase">${report.status || 'UNKNOWN'}</span>
+
+                    <div class="progress rounded-pill bg-light mt-3" style="height: 10px;">
+                        <div class="progress-bar bg-${badgeClass}" role="progressbar" style="width: ${progressValue}%" aria-valuenow="${progressValue}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+
+                    <p class="mt-3 mb-2">${report.description || "Tidak ada deskripsi."}</p>
+
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 text-muted small">
+                        <span><i class="bi bi-person-circle me-1"></i>${report.reporter_username || "Anonim"}</span>
+                        <span><i class="bi bi-calendar-event me-1"></i>${formatDate(report.created_at)}</span>
+                    </div>
+
+                    ${canEditOrDelete ? `
+                        <div class="mt-3 d-flex gap-2 flex-wrap">
+                            <button data-action="edit" data-id="${report.id}" class="btn btn-outline-secondary btn-sm">Edit</button>
+                            <button data-action="delete" data-id="${report.id}" class="btn btn-outline-danger btn-sm">Delete</button>
+                        </div>
+                    ` : ""}
                 </div>
-                <p class="report-description">${report.description || 'Tidak ada deskripsi.'}</p>
-                <div class="d-flex justify-content-between align-items-center mt-3 text-muted small">
-                    <span><i class="bi bi-person-circle"></i> ${report.reporter_username || 'Anonim'}</span>
-                    <span><i class="bi bi-calendar-event"></i> ${formatDate(report.created_at)}</span>
-                </div>
-            </article>
+            </div>
         `;
-    }).join('');
+    }).join("");
+
+    reportCards.querySelectorAll("button[data-action]").forEach((button) => {
+        button.addEventListener("click", async (event) => {
+            const action = event.currentTarget.dataset.action;
+            const reportId = event.currentTarget.dataset.id;
+            const report = allReports.find((item) => String(item.id) === reportId);
+            if (!report) {
+                return;
+            }
+
+            if (action === "edit") {
+                openReportModal(report);
+            }
+
+            if (action === "delete") {
+                await handleDeleteReport(report.id);
+            }
+        });
+    });
 }
 
-async function handleCreateReport(event) {
-    event.preventDefault();
-    const title = document.getElementById("reportTitle").value.trim();
-    const category = document.getElementById("reportCategory").value.trim();
-    const location = document.getElementById("reportLocation").value.trim();
-    const description = document.getElementById("reportDescription").value.trim();
+function renderPagination() {
+    const paginationNav = document.getElementById("paginationNav");
+    if (!paginationNav) {
+        return;
+    }
 
-    if (!title || !category || !location || !description) {
+    if (totalPages <= 1) {
+        paginationNav.innerHTML = "";
+        return;
+    }
+
+    let pagesHtml = "";
+    for (let page = 1; page <= totalPages; page += 1) {
+        pagesHtml += `
+            <li class="page-item ${page === currentPage ? "active" : ""}">
+                <button class="page-link" type="button" data-page="${page}">${page}</button>
+            </li>
+        `;
+    }
+
+    paginationNav.innerHTML = `
+        <nav aria-label="Pagination laporan">
+            <ul class="pagination justify-content-center mb-0">
+                <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
+                    <button class="page-link" type="button" data-page="${currentPage - 1}">Previous</button>
+                </li>
+                ${pagesHtml}
+                <li class="page-item ${currentPage === totalPages ? "disabled" : ""}">
+                    <button class="page-link" type="button" data-page="${currentPage + 1}">Next</button>
+                </li>
+            </ul>
+        </nav>
+    `;
+
+    paginationNav.querySelectorAll("button[data-page]").forEach((button) => {
+        button.addEventListener("click", async (event) => {
+            const page = Number(event.currentTarget.dataset.page);
+            if (page < 1 || page > totalPages || page === currentPage) {
+                return;
+            }
+            currentPage = page;
+            await loadDashboardReports();
+        });
+    });
+}
+
+function changeTab(tab) {
+    if (currentTab === tab) {
+        return;
+    }
+    currentTab = tab;
+    currentPage = 1;
+    loadDashboardReports();
+}
+
+function openReportModal(report = null) {
+    editingReportId = report ? report.id : null;
+
+    document.getElementById("reportModalTitle").textContent = report ? "Edit Draft" : "Buat Laporan Baru";
+    document.getElementById("reportModalHint").textContent = report
+        ? "Edit laporan draft Anda, lalu simpan atau ajukan ke feed kota."
+        : "Isi laporan baru Anda lalu simpan sebagai draft atau ajukan langsung ke feed kota.";
+
+    document.getElementById("reportTitle").value = report ? report.title : "";
+    document.getElementById("reportCategory").value = report ? report.category : "";
+    document.getElementById("reportLocation").value = report ? report.location : "";
+    document.getElementById("reportDescription").value = report ? report.description : "";
+
+    reportModalInstance.show();
+}
+
+function collectReportForm() {
+    return {
+        title: document.getElementById("reportTitle").value.trim(),
+        category: document.getElementById("reportCategory").value.trim(),
+        location: document.getElementById("reportLocation").value.trim(),
+        description: document.getElementById("reportDescription").value.trim()
+    };
+}
+
+async function saveReport(status) {
+    const reportData = collectReportForm();
+
+    if (!reportData.title || !reportData.category || !reportData.location || !reportData.description) {
         showMessage("Semua field laporan harus diisi.", "warning");
         return;
     }
 
-    showMessage("Menyimpan laporan...", "info");
-    log("Membuat laporan baru", { title, category, location });
+    reportData.status = status;
+    const url = editingReportId ? `${REPORTS_URL}${editingReportId}/` : REPORTS_URL;
+    const method = editingReportId ? "PUT" : "POST";
+    const actionLabel = editingReportId ? "memperbarui laporan" : "membuat laporan";
+
+    showMessage(`${status === "REPORTED" ? "Mengajukan laporan..." : "Menyimpan draft..."}`, "info");
 
     try {
-        const response = await apiRequest(REPORTS_URL, {
-            method: "POST",
-            body: {
-                title,
-                category,
-                location,
-                description
-            }
+        const response = await apiRequest(url, {
+            method,
+            body: reportData
         });
 
         if (!response.ok) {
-            const errorData = await response.text();
-            log("createReport error", response.status, errorData);
-            showMessage("Gagal membuat laporan. Cek konsol.", "danger");
+            const errorText = await response.text();
+            log("saveReport error", response.status, errorText);
+            showMessage(`Gagal ${actionLabel}. Cek konsol.`, "danger");
             return;
         }
 
-        const report = await response.json();
-        log("Laporan dibuat", report);
-        showMessage("Laporan berhasil dibuat.", "success");
-        document.getElementById("reportForm").reset();
-        await loadDashboard();
+        await response.json();
+        reportModalInstance.hide();
+        showMessage(`Laporan berhasil ${status === "REPORTED" ? "diajukan" : "disimpan sebagai draft"}.`, "success");
+        await loadDashboardReports();
     } catch (error) {
-        log("createReport exception", error);
-        showMessage("Terjadi kesalahan saat membuat laporan.", "danger");
+        log("saveReport exception", error);
+        showMessage(`Terjadi kesalahan saat ${actionLabel}.`, "danger");
+    }
+}
+
+async function handleDeleteReport(reportId) {
+    const confirmed = confirm("Yakin ingin menghapus laporan?");
+    if (!confirmed) {
+        return;
+    }
+
+    showMessage("Menghapus laporan...", "info");
+    try {
+        const response = await apiRequest(`${REPORTS_URL}${reportId}/`, {
+            method: "DELETE"
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            log("deleteReport error", response.status, errorText);
+            showMessage("Gagal menghapus laporan. Cek konsol.", "danger");
+            return;
+        }
+
+        showMessage("Laporan berhasil dihapus.", "success");
+        await loadDashboardReports();
+    } catch (error) {
+        log("deleteReport exception", error);
+        showMessage("Terjadi kesalahan saat menghapus laporan.", "danger");
+    }
+}
+
+async function loadDashboardReports() {
+    const data = await fetchReports();
+    if (data === null) {
+        return;
+    }
+
+    renderSidebar();
+    renderTabs();
+    renderReports();
+    renderPagination();
+
+    const statusText = document.getElementById("dashboardStatus");
+    if (statusText) {
+        statusText.textContent = `${data.count || 0} laporan ditemukan`;
     }
 }
 
@@ -398,20 +647,50 @@ async function loadDashboard() {
     document.getElementById("app-content").innerHTML = `
         <section class="dashboard-page">
             <div id="messageBox"></div>
-            <div class="dashboard-top mb-4">
+            <div class="dashboard-top d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 mb-4">
                 <div>
-                    <h2>Dashboard Laporan</h2>
-                    <p class="text-muted">Lihat semua laporan warga dan kirim laporan baru dengan cepat.</p>
+                    <h2 class="mb-1">Dashboard Laporan</h2>
+                    <p class="text-muted mb-0">Kelola laporan Anda dan lihat feed kota secara real-time.</p>
                 </div>
-                <button id="refreshReportsBtn" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-clockwise me-1"></i> Segarkan
-                </button>
+                <div class="d-flex flex-column flex-sm-row gap-2">
+                    <button id="refreshReportsBtn" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Segarkan
+                    </button>
+                    <button id="openReportModalBtn" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i> Buat Laporan
+                    </button>
+                </div>
             </div>
-            <div class="row gy-4">
-                <div class="col-12 col-xl-4">
+            <div class="row g-4">
+                <aside class="col-12 col-lg-3">
+                    <div id="sidebarStats"></div>
+                </aside>
+                <div class="col-12 col-lg-9">
                     <div class="card shadow-sm rounded-4 p-4">
-                        <h4 class="fw-bold mb-3">Buat Laporan Baru</h4>
-                        <form id="reportForm" class="report-form">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+                            <div>
+                                <h5 class="mb-1">${currentTab === "feed" ? "Feed Kota" : "Laporan Saya"}</h5>
+                                <p class="text-muted mb-0" id="dashboardStatus"></p>
+                            </div>
+                            <div id="tabControls"></div>
+                        </div>
+                        <div id="reportCards"></div>
+                        <div id="paginationNav" class="mt-4"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content rounded-4">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="reportModalTitle">Buat Laporan Baru</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted" id="reportModalHint">Isi laporan baru Anda lalu simpan sebagai draft atau ajukan langsung ke feed kota.</p>
+                        <form id="reportForm">
                             <div class="mb-3">
                                 <label class="form-label">Judul</label>
                                 <input type="text" id="reportTitle" class="form-control" placeholder="Judul laporan" required>
@@ -428,32 +707,28 @@ async function loadDashboard() {
                                 <label class="form-label">Deskripsi</label>
                                 <textarea id="reportDescription" class="form-control" rows="5" placeholder="Deskripsi masalah" required></textarea>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100">Kirim Laporan</button>
                         </form>
                     </div>
-                </div>
-                <div class="col-12 col-xl-8">
-                    <div id="reportCards" class="report-grid"></div>
+                    <div class="modal-footer">
+                        <button type="button" id="btnSaveDraft" class="btn btn-outline-secondary">Simpan Draft</button>
+                        <button type="button" id="btnSubmitReport" class="btn btn-primary">Ajukan Laporan</button>
+                    </div>
                 </div>
             </div>
-        </section>
+        </div>
     `;
 
-    document.getElementById("reportForm").addEventListener("submit", handleCreateReport);
+    reportModalInstance = new bootstrap.Modal(document.getElementById("reportModal"));
     document.getElementById("refreshReportsBtn").addEventListener("click", async () => {
         showMessage("Menyegarkan daftar laporan...", "info");
-        await initReportList();
+        await loadDashboardReports();
     });
+    document.getElementById("openReportModalBtn").addEventListener("click", () => openReportModal());
+    document.getElementById("reportForm").addEventListener("submit", (event) => event.preventDefault());
+    document.getElementById("btnSaveDraft").addEventListener("click", () => saveReport("DRAFT"));
+    document.getElementById("btnSubmitReport").addEventListener("click", () => saveReport("REPORTED"));
 
-    await initReportList();
-}
-
-async function initReportList() {
-    const reports = await fetchReports();
-    if (reports === null) {
-        return;
-    }
-    renderReports(reports);
+    await loadDashboardReports();
 }
 
 function route() {

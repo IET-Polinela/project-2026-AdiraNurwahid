@@ -150,11 +150,11 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarMenu">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item"><a class="nav-link" href="/">Beranda</a></li>
-            <li class="nav-item"><a class="nav-link" href="/">Daftar Laporan</a></li>
-            <li class="nav-item"><a class="nav-link" href="/dashboard/">Dashboard</a></li>
-            <li class="nav-item"><a class="nav-link" href="/about/">Tentang</a></li>
-            <li class="nav-item"><a class="nav-link" href="/contacts/">Kontak</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'report_list' %}">Beranda</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'report_list' %}">Daftar Laporan</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'dashboard_main' %}">Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'about' %}">Tentang</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'contacts' %}">Kontak</a></li>
         </ul>
         <div class="d-flex align-items-center text-white">
             {% if user.is_authenticated %}

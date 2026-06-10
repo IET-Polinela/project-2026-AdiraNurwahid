@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ========================
 SECRET_KEY = 'django-insecure-your-secret-key'
 DEBUG = True
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # ========================
 # APPLICATION
@@ -46,7 +46,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'iet_24782002_2026.urls'
+ROOT_URLCONF = 'smartcity_app.urls'
 
 # ========================
 # TEMPLATES
@@ -69,7 +69,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'iet_24782002_2026.wsgi.application'
+WSGI_APPLICATION = 'smartcity_app.wsgi.application'
 
 # ========================
 # DATABASE (POSTGRESQL)
@@ -171,3 +171,5 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'

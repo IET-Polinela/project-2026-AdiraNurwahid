@@ -10,7 +10,7 @@ let allReports = [];
 let totalPages = 1;
 let reportModalInstance = null;
 
-const BASE_URL = "http://127.0.0.1:8000";
+const BASE_URL =  "http://103.151.63.71:8006";
 const TOKEN_URL = "/api/token/";
 const REFRESH_URL = "/api/token/refresh/";
 const REPORTS_URL = "/api/reports/";

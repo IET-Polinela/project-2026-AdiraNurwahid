@@ -10,6 +10,7 @@ from django.http import HttpResponse, JsonResponse
 from django.db.models import Q
 from rest_framework import generics, permissions
 from .serializers import ReportSerializer
+from drf_spectacular.utils import extend_schema_view, extend_schema
 
 
 
@@ -122,12 +123,14 @@ class ReportListAPI(generics.ListCreateAPIView):
         serializer.save(reporter=self.request.user)
 
 
+@extend_schema_view(
+    destroy=extend_schema(exclude=True)
+)
 class ReportDetailAPI(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
     permission_classes = [permissions.IsAuthenticated]
-
     def perform_destroy(self, instance):
 
         # hanya owner + status DRAFT

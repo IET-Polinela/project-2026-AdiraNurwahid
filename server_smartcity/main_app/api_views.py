@@ -4,6 +4,7 @@ from .models import Report
 from .serializers import ReportSerializer
 from .permissions import IsOwnerAndDraftOrReadOnly
 from rest_framework.pagination import PageNumberPagination
+from drf_spectacular.utils import extend_schema
 
 class ReportPagination(PageNumberPagination):
     page_size = 10
@@ -57,6 +58,7 @@ class ReportViewSet(viewsets.ModelViewSet):
         """
         serializer.save(reporter=self.request.user)
 
+    @extend_schema(exclude=True)
     def destroy(self, request, *args, **kwargs):
         """
         Override destroy untuk memberikan pesan error yang jelas

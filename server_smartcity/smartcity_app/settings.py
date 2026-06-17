@@ -23,6 +23,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',   # ← Tambahkan ini
     'corsheaders',
+    'drf_spectacular',
+    'django_scalar',
     
 
     'main',
@@ -135,6 +137,8 @@ LOGOUT_REDIRECT_URL = '/auth/login/'
 # DRF + JWT (LAB 10)
 # ========================
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
@@ -181,3 +185,16 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Smart City Portal API',
+    'DESCRIPTION': 'Dokumentasi REST API resmi untuk Portal Pelaporan Warga',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
+
+SCALAR_OPENAPI_URL = "/api/schema/"
+
+SCALAR_TITLE = "Smart City Portal API"
+
+SCALAR_THEME = "purple"

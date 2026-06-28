@@ -3,11 +3,11 @@ from .models import Report
 
 class ReportSerializer(serializers.ModelSerializer):
 
-    reporter_username = serializers.SerializerMethodField()
+    reporter_name = serializers.SerializerMethodField()
 
     is_owner = serializers.SerializerMethodField()
 
-    def get_reporter_username(self, obj):
+    def get_reporter_name(self, obj):
         request = self.context.get('request')
 
         if request:
@@ -17,7 +17,12 @@ class ReportSerializer(serializers.ModelSerializer):
             if tab == 'feed':
                 return 'Warga Anonim'
 
-        return obj.reporter.username
+            # Tampilkan nama asli untuk pemilik laporan
+            if request.user and request.user.is_authenticated:
+                return obj.reporter.username if obj.reporter else 'Warga Anonim'
+
+        # Jika tidak ada request context, kembalikan Warga Anonim
+        return 'Warga Anonim'
 
     def get_is_owner(self, obj):
         request = self.context.get('request')

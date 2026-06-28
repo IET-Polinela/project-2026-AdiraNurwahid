@@ -1,4 +1,4 @@
-const BASE_URL = "http://103.151.63.71:8006";
+const BASE_URL = "http://localhost:8000";
 
 async function requestAPI(endpoint, method="GET", bodyData=null){
 

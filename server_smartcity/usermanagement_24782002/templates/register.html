@@ -1,0 +1,59 @@
+{% extends 'main_app/base.html' %}
+{% block body_class %}auth-page{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-center align-items-center" style="min-height: calc(100vh - 4rem);">
+    <div class="auth-card row gx-0" style="max-width: 900px; width: 100%;">
+        <div class="col-md-6 auth-panel p-5 d-flex flex-column justify-content-center">
+            <div class="mb-4">
+                <span class="badge bg-white text-primary py-2 px-3 rounded-pill">Smart City</span>
+            </div>
+            <h1 class="display-6 fw-bold">Buat Akun Baru</h1>
+            <p class="opacity-75">Daftar sekarang untuk mulai mengirim laporan dan menggunakan dashboard penuh.</p>
+            <div class="mt-4 d-flex gap-2">
+                <span class="badge bg-white text-primary">Terpercaya</span>
+                <span class="badge bg-white text-primary">Mudah</span>
+                <span class="badge bg-white text-primary">Modern</span>
+            </div>
+        </div>
+        <div class="col-md-6 bg-white p-5">
+            <div class="mb-4 text-center">
+                <h2 class="fw-bold">Daftar</h2>
+                <p class="text-muted">Isi data berikut untuk membuat akun.</p>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label text-secondary">Username</label>
+                    <div class="input-group rounded-4 overflow-hidden shadow-sm">
+                        <span class="input-group-text bg-white border-0"><i class="bi bi-person-fill text-primary"></i></span>
+                        <input type="text" name="username" class="form-control auth-input border-0" placeholder="Username" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary">Email</label>
+                    <div class="input-group rounded-4 overflow-hidden shadow-sm">
+                        <span class="input-group-text bg-white border-0"><i class="bi bi-envelope-fill text-primary"></i></span>
+                        <input type="email" name="email" class="form-control auth-input border-0" placeholder="Email" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary">Password</label>
+                    <div class="input-group rounded-4 overflow-hidden shadow-sm">
+                        <span class="input-group-text bg-white border-0"><i class="bi bi-lock-fill text-primary"></i></span>
+                        <input type="password" name="password" class="form-control auth-input border-0" placeholder="Password" required>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label text-secondary">Role</label>
+                    <select name="role" class="form-select auth-input border-0">
+                        <option value="member">Member</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill">Daftar Sekarang</button>
+            </form>
+            <p class="text-center text-muted mt-4 mb-0">Sudah punya akun? <a href="{% url 'login' %}" class="text-primary fw-semibold">Masuk di sini</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

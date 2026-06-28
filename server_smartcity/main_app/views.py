@@ -4,58 +4,68 @@ from .models import Report
 from django.views import View
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, Http404
 from django.db.models import Q
 from rest_framework import generics, permissions
 from .serializers import ReportSerializer
 from drf_spectacular.utils import extend_schema_view, extend_schema
 
 
+class AdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    """Mixin to restrict access to admin (is_staff) users only."""
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def handle_no_permission(self):
+        if not self.request.user.is_authenticated:
+            return super(LoginRequiredMixin, self).handle_no_permission()
+        return redirect('report_list')
+
 
 @login_required
 def about_view(request):
-    return render(request, 'about.html')
+    return render(request, 'main_app/about.html')
 
 
 @login_required
 def contacts_view(request):
-    return render(request, 'contacts.html')
+    return render(request, 'main_app/contacts.html')
 
-# LIST
-class ReportListView(LoginRequiredMixin, ListView):
+# LIST - only admin
+class ReportListView(AdminRequiredMixin, ListView):
     model = Report
-    template_name = 'home.html'
+    template_name = 'main_app/home.html'
     context_object_name = 'reports'
 
-# DETAIL
-class ReportDetailView(LoginRequiredMixin, DetailView):
+# DETAIL - only admin
+class ReportDetailView(AdminRequiredMixin, DetailView):
     model = Report
-    template_name = 'report_detail.html'
+    template_name = 'main_app/report_detail.html'
 
-# CREATE
-class ReportCreateView(LoginRequiredMixin, CreateView):
+# CREATE - only admin
+class ReportCreateView(AdminRequiredMixin, CreateView):
     model = Report
     fields = ['title', 'category', 'description', 'location']
-    template_name = 'add_report.html'
+    template_name = 'main_app/add_report.html'
     success_url = reverse_lazy('report_list')
 
-# UPDATE
-class ReportUpdateView(LoginRequiredMixin, UpdateView):
+# UPDATE - only admin
+class ReportUpdateView(AdminRequiredMixin, UpdateView):
     model = Report
     fields = ['title', 'category', 'description', 'location', 'status']
-    template_name = 'edit_report.html'
+    template_name = 'main_app/edit_report.html'
     success_url = reverse_lazy('report_list')
 
-# DELETE
-class ReportDeleteView(LoginRequiredMixin, DeleteView):
+# DELETE - only admin
+class ReportDeleteView(AdminRequiredMixin, DeleteView):
     model = Report
-    template_name = 'delete_report.html'
+    template_name = 'main_app/delete_report.html'
     success_url = reverse_lazy('report_list')
 
-# STATUS
-class ReportUpdateStatusView(LoginRequiredMixin, View):
+# STATUS UPDATE - only admin
+class ReportUpdateStatusView(AdminRequiredMixin, View):
     def post(self, request, pk):
         report = get_object_or_404(Report, pk=pk)
         report.status = request.POST.get('status')
@@ -63,15 +73,19 @@ class ReportUpdateStatusView(LoginRequiredMixin, View):
         messages.success(request, "Status berhasil diubah!")
         return redirect('report_list')
 
+
 def admin_only(view_func):
     def wrapper(request, *args, **kwargs):
-        if request.user.role != 'admin':
+        if not hasattr(request, 'user') or not request.user.is_authenticated:
+            return HttpResponse("Akses Ditolak", status=403)
+        if not request.user.is_staff:
             return HttpResponse("Akses Ditolak", status=403)
         return view_func(request, *args, **kwargs)
     return wrapper
 
-# API untuk search reports
-@login_required
+
+# API untuk search reports - admin only
+@admin_only
 def search_reports(request):
     q = request.GET.get('q', '')
     reports = Report.objects.filter(
@@ -81,6 +95,7 @@ def search_reports(request):
     )[:20]
     data = list(reports.values('id', 'title', 'category', 'location', 'status'))
     return JsonResponse(data, safe=False)
+
 
 # API untuk detail report
 @login_required
@@ -162,3 +177,21 @@ class ReportDetailAPI(generics.RetrieveUpdateDestroyAPIView):
             )
 
         serializer.save()
+
+
+@login_required
+def report_detail_api(request, id):
+    try:
+        report = Report.objects.get(id=id)
+
+        return JsonResponse({
+            'id': report.id,
+            'title': report.title,
+            'category': report.category,
+            'description': report.description,
+            'location': report.location,
+            'status': report.status,
+        })
+
+    except Report.DoesNotExist:
+        raise Http404("Report not found")

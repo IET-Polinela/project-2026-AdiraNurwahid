@@ -1,4 +1,4 @@
-﻿// ==========================
+// ==========================
 // GLOBAL STATE
 // ==========================
 
@@ -10,10 +10,10 @@ let allReports = [];
 let totalPages = 1;
 let reportModalInstance = null;
 
-const BASE_URL =  "http://103.151.63.71:8006";
+const BASE_URL = "http://localhost:8000";
 const TOKEN_URL = "/api/token/";
 const REFRESH_URL = "/api/token/refresh/";
-const REPORTS_URL = "/api/reports/";
+const REPORTS_URL = "/api/report/";
 
 const STATUS_BADGES = {
     DRAFT: "secondary",
@@ -115,6 +115,9 @@ async function apiRequest(endpoint, { method = "GET", body = null, headers = {} 
             await refreshAccessToken();
         } catch (error) {
             log("Refresh token gagal sebelum request", error);
+            // Jika refresh gagal, langsung logout
+            logout(false);
+            throw error;
         }
     }
 
@@ -146,11 +149,19 @@ async function apiRequest(endpoint, { method = "GET", body = null, headers = {} 
         try {
             await refreshAccessToken();
             const newToken = getToken("access_token");
+            const retryHeaders = { ...requestHeaders };
             if (newToken) {
-                requestHeaders["Authorization"] = `Bearer ${newToken}`;
+                retryHeaders["Authorization"] = `Bearer ${newToken}`;
             }
-            const retryResponse = await fetch(BASE_URL + endpoint, options);
+            const retryOptions = { ...options, headers: retryHeaders };
+            const retryResponse = await fetch(BASE_URL + endpoint, retryOptions);
             log("retry response", endpoint, retryResponse.status);
+
+            if (retryResponse.status === 401) {
+                log("Retry juga 401, logout paksa");
+                logout(false);
+            }
+
             return retryResponse;
         } catch (error) {
             log("Retry setelah refresh gagal", error);
@@ -439,7 +450,7 @@ function renderReports() {
                     <p class="mt-3 mb-2">${report.description || "Tidak ada deskripsi."}</p>
 
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 text-muted small">
-                        <span><i class="bi bi-person-circle me-1"></i>${report.reporter_username || "Anonim"}</span>
+                        <span><i class="bi bi-person-circle me-1"></i>${report.reporter_name || "Anonim"}</span>
                         <span><i class="bi bi-calendar-event me-1"></i>${formatDate(report.created_at)}</span>
                     </div>
 
@@ -750,8 +761,21 @@ function route() {
 window.addEventListener("hashchange", route);
 window.addEventListener("DOMContentLoaded", () => {
     updateNav();
-    if (isLoggedIn() && window.location.hash === "#login") {
+
+    const hash = window.location.hash || "#login";
+
+    // Jika sudah login dan hash-nya #login, redirect ke dashboard
+    if (isLoggedIn() && hash === "#login") {
         window.location.hash = "#dashboard";
+        return;
     }
+
+    // Jika hash adalah #dashboard tapi tidak login, langsung redirect ke #login
+    // tanpa menunggu hashchange (karena goto dengan hash tidak trigger hashchange)
+    if (hash === "#dashboard" && !isLoggedIn()) {
+        window.location.hash = "#login";
+        return;
+    }
+
     route();
 });

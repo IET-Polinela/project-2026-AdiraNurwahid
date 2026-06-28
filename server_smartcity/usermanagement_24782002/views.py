@@ -28,7 +28,7 @@ def login_view(request):
         else:
             messages.error(request, 'Username atau password salah!')
 
-    return render(request, 'login.html')
+    return render(request, 'main_app/login.html')
 
 
 def logout_view(request):
@@ -71,14 +71,14 @@ def register_view(request):
         messages.success(request, 'Akun berhasil dibuat!')
         return redirect('login')
 
-    return render(request, 'register.html')
+    return render(request, 'main_app/register.html')
 
 
 # ================= DASHBOARD (CBV) =================
 
 @method_decorator(login_required, name='dispatch')
 class DashboardView(TemplateView):
-    template_name = 'dashboard/dashboard.html'
+    template_name = 'main_app/dashboard/dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -119,7 +119,7 @@ def category_chart(request):
 def admin_only(view_func):
     def wrapper(request, *args, **kwargs):
         if not (request.user.is_superuser or request.user.is_staff or request.user.role == 'admin'):
-            return render(request, '403.html', status=403)
+            return render(request, 'main_app/403.html', status=403)
         return view_func(request, *args, **kwargs)
     return wrapper
 
@@ -127,4 +127,4 @@ def admin_only(view_func):
 @login_required
 @admin_only
 def admin_panel(request):
-    return render(request, 'admin_panel.html')
+    return render(request, 'main_app/admin_panel.html')

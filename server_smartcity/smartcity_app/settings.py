@@ -79,9 +79,9 @@ WSGI_APPLICATION = 'smartcity_app.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'smartcity_db',
-        'USER': 'postgres',
-        'PASSWORD': 'admin',
+        'NAME': 'db_mhs03',
+        'USER': 'user_mhs03',
+        'PASSWORD': 'mhs03',
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -181,7 +181,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 ALLOWED_HOSTS = ['*']
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:8000',
+    'http://103.151.63.71:8006',
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True

@@ -13,7 +13,7 @@ let reportModalInstance = null;
 const BASE_URL = "http://103.151.63.71:8006";
 const TOKEN_URL = "/api/token/";
 const REFRESH_URL = "/api/token/refresh/";
-const REPORTS_URL = "/api/report/";
+const REPORTS_URL = "/api/reports/";
 
 const STATUS_BADGES = {
     DRAFT: "secondary",
@@ -450,7 +450,7 @@ function renderReports() {
                     <p class="mt-3 mb-2">${report.description || "Tidak ada deskripsi."}</p>
 
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 text-muted small">
-                        <span><i class="bi bi-person-circle me-1"></i>${report.reporter_name || "Anonim"}</span>
+                        <span><i class="bi bi-person-circle me-1"></i>${report.reporter_username || "Anonim"}</span>
                         <span><i class="bi bi-calendar-event me-1"></i>${formatDate(report.created_at)}</span>
                     </div>
 
